@@ -14,7 +14,6 @@ import { User } from '../users/user.entity';
 import { Destination } from '../destinations/destination.entity';
 import { HotelImage } from './hotel-image.entity';
 
-// Define possible hotel statuses for type safety
 export enum HotelStatus {
   PENDING_APPROVAL = 'pending_approval',
   APPROVED = 'approved',
@@ -27,7 +26,6 @@ export class Hotel {
   @PrimaryGeneratedColumn()
   id: number;
 
-  // --- Relationships ---
   @ManyToOne(() => User)
   @JoinColumn({ name: 'agent_id' })
   agent: User;
@@ -38,11 +36,10 @@ export class Hotel {
 
   @OneToMany(() => HotelImage, (image) => image.hotel, {
     cascade: true,
-    eager: true, // Automatically load images when a hotel is fetched
+    eager: true,
   })
   images: HotelImage[];
 
-  // --- Core Details ---
   @Column()
   name: string;
 
@@ -55,7 +52,6 @@ export class Hotel {
   @Column({ type: 'decimal', precision: 3, scale: 1, default: 0.0 })
   starRating: number;
 
-  // --- Location ---
   @Column()
   address: string;
 
@@ -68,7 +64,6 @@ export class Hotel {
   @Column({ nullable: true })
   pincode: string;
 
-  // --- Contact & Pricing ---
   @Column({ nullable: true })
   contactEmail: string;
 
@@ -81,9 +76,8 @@ export class Hotel {
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
   pricePerNight: number;
 
-  // --- Features ---
   @Column({ type: 'json', nullable: true })
-  amenities: string[]; // e.g., ["wifi", "pool", "gym"]
+  amenities: string[];
 
   @Column({ nullable: true })
   checkInTime: string;
@@ -91,7 +85,6 @@ export class Hotel {
   @Column({ nullable: true })
   checkOutTime: string;
 
-  // --- Status & Timestamps ---
   @Column({
     type: 'enum',
     enum: HotelStatus,

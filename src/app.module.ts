@@ -10,7 +10,7 @@ import { PackagesModule } from './packages/packages.module';
 import { HotelsModule } from './hotels/hotels.module';
 import { QuotesModule } from './quotes/quotes.module';
 import { PaymentsModule } from './payments/payments.module';
-import { AdminModule } from './admin/admin.module'; // 1. Import AdminModule
+import { AdminModule } from './admin/admin.module';
 
 import { User } from './users/user.entity';
 import { Destination } from './destinations/destination.entity';
@@ -52,7 +52,8 @@ import { Subscription } from './payments/subscription.entity';
           Payment,
           Subscription,
         ],
-        synchronize: false,
+        // This is the key change for your live deployment
+        synchronize: true,
       }),
     }),
     UsersModule,
@@ -62,7 +63,7 @@ import { Subscription } from './payments/subscription.entity';
     HotelsModule,
     QuotesModule,
     PaymentsModule,
-    AdminModule, // 2. Add AdminModule to the imports array
+    AdminModule,
   ],
   controllers: [],
   providers: [],
