@@ -1,39 +1,40 @@
-import { Controller, Request, Post, UseGuards, Body, Get } from '@nestjs/common'; // <-- Import Get
+import { Controller, Request, Post, UseGuards, Body, Get, HttpCode, HttpStatus } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
-import { UsersService } from '../users/users.service';
-import { CreateUserDto } from '../users/dto/create-user.dto';
+import { RegisterTravelerDto } from './dto/register-traveler.dto';
+import { RegisterAgentDto } from './dto/register-agent.dto';
+import { LoginDto } from './dto/login.dto'; // This import might be needed if not present
 
 @Controller('auth')
 export class AuthController {
-  constructor(
-    private authService: AuthService,
-    private usersService: UsersService,
-  ) {}
+  constructor(private authService: AuthService) {}
 
   @UseGuards(AuthGuard('local'))
   @Post('login')
+  @HttpCode(HttpStatus.OK)
   async login(@Request() req) {
     return this.authService.login(req.user);
   }
 
-  @Post('register')
-  async register(@Body() createUserDto: CreateUserDto) {
-    const user = await this.usersService.create(createUserDto);
-    return this.authService.login(user);
+  @Post('register/traveler')
+  @HttpCode(HttpStatus.CREATED)
+  registerTraveler(@Body() registerDto: RegisterTravelerDto) {
+    return this.authService.registerTraveler(registerDto);
   }
 
-  // --- NEW PROTECTED ENDPOINT ---
-  // 1. This endpoint is protected by the 'jwt' guard.
-  // 2. The guard will automatically handle token verification. If the token is invalid
-  //    or missing, it will throw a 401 Unauthorized error.
-  // 3. If the token is valid, the `JwtStrategy`'s `validate` method runs,
-  //    and its return value is attached to the request object as `req.user`.
+  @Post('register/agent')
+  @HttpCode(HttpStatus.CREATED)
+  registerAgent(@Body() registerDto: RegisterAgentDto) {
+    return this.authService.registerAgent(registerDto);
+  }
+
+  // 1. ADD THE GUARD to protect this endpoint
   @UseGuards(AuthGuard('jwt'))
   @Get('profile')
   getProfile(@Request() req) {
-    // req.user contains the payload we returned from JwtStrategy.validate()
-    // { userId: payload.sub, email: payload.email }
+    // 2. UPDATE THE RETURN VALUE
+    // This decorator uses the JwtStrategy to verify the token.
+    // If the token is valid, `req.user` is populated by the strategy.
     return req.user;
   }
 }

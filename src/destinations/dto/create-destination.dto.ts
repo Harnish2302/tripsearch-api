@@ -1,11 +1,12 @@
 import {
-  IsNotEmpty,
   IsString,
-  IsUrl,
+  IsNotEmpty,
   IsOptional,
   IsEnum,
-  IsInt,
+  IsNumber,
+  IsArray,
   Min,
+  Max,
 } from 'class-validator';
 import { DestinationStatus } from '../destination.entity';
 
@@ -16,23 +17,26 @@ export class CreateDestinationDto {
 
   @IsString()
   @IsNotEmpty()
-  slug: string;
+  description: string;
+
+  @IsString()
+  @IsNotEmpty()
+  country: string;
 
   @IsString()
   @IsOptional()
-  country?: string;
+  region?: string;
 
+  // We will handle the file path logic in the service/controller,
+  // the DTO just expects a string URL path.
   @IsString()
-  @IsOptional()
-  description?: string;
+  @IsNotEmpty()
+  imageUrl: string;
 
-  @IsUrl()
+  @IsArray()
+  @IsString({ each: true })
   @IsOptional()
-  imageUrl?: string;
-
-  @IsString()
-  @IsOptional()
-  imageUrls?: string;
+  imageUrls?: string[];
 
   @IsString()
   @IsOptional()
@@ -40,36 +44,37 @@ export class CreateDestinationDto {
 
   @IsString()
   @IsOptional()
-  highlights?: string;
-
-  @IsString()
-  @IsOptional()
-  tags?: string;
-
-  @IsString()
-  @IsOptional()
-  region?: string;
-
-  @IsString()
-  @IsOptional()
   idealDuration?: string;
 
   @IsString()
-  @IsOptional()
-  knownFor?: string;
+  @IsNotEmpty()
+  currency: string;
 
-  @IsString()
-  @IsOptional()
-  languages?: string;
-
-  @IsString()
-  @IsOptional()
-  currency?: string;
-
-  @IsInt()
+  @IsNumber()
   @Min(0)
+  @Max(100)
   @IsOptional()
   popularity?: number;
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  highlights?: string[];
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  tags?: string[];
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  knownFor?: string[];
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  languages?: string[];
 
   @IsEnum(DestinationStatus)
   @IsOptional()
@@ -83,7 +88,8 @@ export class CreateDestinationDto {
   @IsOptional()
   metaDescription?: string;
 
-  @IsString()
+  @IsArray()
+  @IsString({ each: true })
   @IsOptional()
-  metaKeywords?: string;
+  metaKeywords?: string[];
 }

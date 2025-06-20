@@ -1,19 +1,23 @@
+// In src/destinations/destination.entity.ts
+
 import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  BeforeInsert,
 } from 'typeorm';
 
-// This enum must match the definition in your database
+// We can define the possible statuses as an enum for type safety.
+// This is based on the status check in your PHP file.
 export enum DestinationStatus {
   ACTIVE = 'active',
   INACTIVE = 'inactive',
   DRAFT = 'draft',
 }
 
-@Entity({ name: 'destinations' })
+@Entity('destinations')
 export class Destination {
   @PrimaryGeneratedColumn()
   id: number;
@@ -21,47 +25,49 @@ export class Destination {
   @Column()
   name: string;
 
-  @Column()
+  @Column({ unique: true })
   slug: string;
 
-  @Column({ nullable: true })
-  country: string;
-
-  @Column({ type: 'text', nullable: true })
+  @Column({ type: 'text' })
   description: string;
 
-  @Column({ type: 'varchar', length: 1024, nullable: true })
-  imageUrl: string;
-
-  @Column({ type: 'text', nullable: true })
-  imageUrls: string; // Storing as a JSON string is recommended
-
-  @Column({ nullable: true })
-  bestTimeToVisit: string;
-
-  @Column({ type: 'text', nullable: true })
-  highlights: string; // Storing as a JSON string is recommended
-
-  @Column({ type: 'text', nullable: true })
-  tags: string; // Storing as a JSON string is recommended
+  @Column()
+  country: string;
 
   @Column({ nullable: true })
   region: string;
 
+  // Corresponds to 'primaryImage' in the old script
+  @Column()
+  imageUrl: string;
+
+  // Corresponds to 'galleryImages'
+  @Column({ type: 'json', nullable: true })
+  imageUrls: string[];
+
+  @Column({ nullable: true })
+  bestTimeToVisit: string;
+
   @Column({ nullable: true })
   idealDuration: string;
 
-  @Column({ type: 'text', nullable: true })
-  knownFor: string;
-
-  @Column({ nullable: true })
-  languages: string;
-
-  @Column({ nullable: true })
+  @Column()
   currency: string;
 
   @Column({ type: 'int', default: 0 })
   popularity: number;
+
+  @Column({ type: 'json', nullable: true })
+  highlights: string[];
+
+  @Column({ type: 'json', nullable: true })
+  tags: string[];
+
+  @Column({ type: 'json', nullable: true })
+  knownFor: string[];
+
+  @Column({ type: 'json', nullable: true })
+  languages: string[];
 
   @Column({
     type: 'enum',
@@ -70,18 +76,30 @@ export class Destination {
   })
   status: DestinationStatus;
 
+  // Meta fields for SEO
   @Column({ nullable: true })
   metaTitle: string;
 
   @Column({ type: 'text', nullable: true })
   metaDescription: string;
 
-  @Column({ type: 'text', nullable: true })
-  metaKeywords: string;
+  @Column({ type: 'json', nullable: true })
+  metaKeywords: string[];
 
   @CreateDateColumn()
   createdAt: Date;
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  // This hook automatically generates a URL-friendly slug from the name
+  // before a new destination is inserted into the database. This replaces
+  // the 'generateSlug' function in your PHP file.
+  @BeforeInsert()
+  generateSlug() {
+    this.slug = this.name
+      .toLowerCase()
+      .replace(/ /g, '-')
+      .replace(/[^\w-]+/g, '');
+  }
 }

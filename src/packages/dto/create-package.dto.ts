@@ -10,6 +10,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
+// Your nested DTO for images is perfect and remains unchanged.
 class CreatePackageImageDto {
   @IsString()
   @IsNotEmpty()
@@ -29,31 +30,27 @@ export class CreatePackageDto {
   @IsNotEmpty()
   title: string;
 
+  // We expect the ID of the destination, which we'll use to create the relation.
   @IsNumber()
   @IsNotEmpty()
-  agentId: number;
-
-  // The 'slug' property has been removed to match the database schema.
+  destinationId: number;
 
   @IsString()
-  @IsOptional()
-  destination?: string;
-
-  @IsString()
-  @IsOptional()
-  description?: string;
-
-  @IsString()
-  @IsOptional()
-  imageUrl?: string;
+  @IsNotEmpty()
+  description: string;
 
   @IsNumber()
   @Min(0)
   price: number;
-
+  
   @IsNumber()
   @IsOptional()
-  duration?: number;
+  @Min(0)
+  discountPrice?: number;
+  
+  @IsNumber()
+  @Min(1)
+  duration: number; // in days
   
   @IsString()
   @IsOptional()
@@ -61,16 +58,40 @@ export class CreatePackageDto {
 
   @IsString()
   @IsOptional()
-  inclusions?: string;
+  hotelCategory?: string;
 
-  @IsString()
+  // --- Array Fields ---
+  // These now correctly validate an array of strings.
+  @IsArray()
+  @IsString({ each: true })
   @IsOptional()
-  exclusions?: string;
+  inclusions?: string[];
 
-  @IsString()
+  @IsArray()
+  @IsString({ each: true })
   @IsOptional()
-  itinerary?: string;
+  exclusions?: string[];
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  tags?: string[];
   
+  // --- Nested Objects ---
+  // This validates an array of Itinerary objects.
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => ItineraryDayDto) // We define this small helper class below
+  itinerary?: ItineraryDayDto[];
+  
+  // This validates the array of images you already defined. It is perfect.
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreatePackageImageDto)
+  images: CreatePackageImageDto[];
+  
+  // --- Optional Simple Fields ---
   @IsNumber()
   @IsOptional()
   maxParticipants?: number;
@@ -78,46 +99,23 @@ export class CreatePackageDto {
   @IsNumber()
   @IsOptional()
   minAge?: number;
-
-  @IsNumber()
-  @IsOptional()
-  discountPrice?: number;
-
-  @IsNumber()
-  @IsOptional()
-  discountPercentage?: number;
-  
-  @IsString()
-  @IsOptional()
-  status?: string;
-
-  @IsString()
-  @IsOptional()
-  rejectionReason?: string;
   
   @IsBoolean()
   @IsOptional()
-  featured?: boolean;
+  isFeatured?: boolean; // Renamed from 'featured' for clarity
+}
 
-  @IsString()
-  @IsOptional()
-  tags?: string;
-  
-  @IsString()
-  @IsOptional()
-  hotelCategory?: string;
+// A small helper class to validate the structure of each day in the itinerary.
+class ItineraryDayDto {
+    @IsNumber()
+    @IsNotEmpty()
+    day: number;
 
-  @IsString()
-  @IsOptional()
-  availabilityDates?: string;
-  
-  @IsNumber()
-  @IsOptional()
-  viewCount?: number;
+    @IsString()
+    @IsNotEmpty()
+    title: string;
 
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => CreatePackageImageDto)
-  @IsOptional()
-  images?: CreatePackageImageDto[];
+    @IsString()
+    @IsNotEmpty()
+    description: string;
 }

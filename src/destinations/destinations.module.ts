@@ -1,11 +1,16 @@
+// In src/destinations/destinations.module.ts
+
 import { Module } from '@nestjs/common';
-import { DestinationsService } from './destinations.service';
-import { DestinationsController } from './destinations.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Destination } from './destination.entity';
+import { DestinationsController } from './destinations.controller';
+import { DestinationsService } from './destinations.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Destination])],
+  imports: [
+    // This makes the Destination entity's repository available to the DestinationsService
+    TypeOrmModule.forFeature([Destination]),
+  ],
   controllers: [DestinationsController],
   providers: [DestinationsService],
 })

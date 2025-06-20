@@ -1,37 +1,65 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
-@Entity({ name: 'users' })
+// ADD 'export' HERE
+export enum UserRole {
+  ADMIN = 'admin',
+  AGENT = 'agent',
+  TRAVELER = 'traveler',
+}
+
+// AND ADD 'export' HERE
+export enum UserStatus {
+  ACTIVE = 'active',
+  PENDING = 'pending',
+  INACTIVE = 'inactive',
+}
+
+@Entity('users')
 export class User {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ name: 'firstName' }) // Corrected from 'name'
+  @Column({ length: 100, nullable: true })
   firstName: string;
 
-  @Column({ name: 'lastName' }) // Added this new property
+  @Column({ length: 100, nullable: true })
   lastName: string;
 
-  @Column()
+  @Column({ unique: true, length: 255 })
   email: string;
 
-  @Column({ name: 'passwordHash' }) // Corrected from 'password'
-  passwordHash: string;
-
-  @Column()
-  role: string;
-
-  @Column({ nullable: true })
+  @Column({ unique: true, length: 20, nullable: true })
   phone: string;
 
-  @Column({ name: 'company', nullable: true }) // Corrected from 'agencyName'
+  @Column({ select: false })
+  passwordHash: string;
+
+  @Column({
+    type: 'enum',
+    enum: UserRole,
+  })
+  role: UserRole;
+
+  @Column({
+    type: 'enum',
+    enum: UserStatus,
+    default: UserStatus.PENDING,
+  })
+  status: UserStatus;
+
+  // ... rest of your entity file is correct
+  @Column({ nullable: true })
+  photoUrl: string;
+
+  @Column({ nullable: true })
   company: string;
 
-  @Column({ name: 'bio', type: 'text', nullable: true }) // Corrected from 'agencyDescription'
+  @Column({ type: 'text', nullable: true })
   bio: string;
 
-  @Column({ name: 'website', nullable: true }) // Corrected from 'agencyWebsite'
+  @Column({ nullable: true })
   website: string;
-
+  
   @Column({ nullable: true })
   address: string;
 
@@ -41,20 +69,21 @@ export class User {
   @Column({ nullable: true })
   country: string;
 
-  @Column({ name: 'specialties', type: 'longtext', nullable: true })
-  specialties: string;
+  @Column({ type: 'json', nullable: true })
+  specialties: string[];
 
-  @Column({ name: 'languages', type: 'longtext', nullable: true })
-  languages: string;
+  @Column({ type: 'json', nullable: true })
+  languages: string[];
 
-  @Column({ name: 'photoUrl', nullable: true }) // Corrected from 'profileImage'
-  photoUrl: string;
+  @Column({ default: 'free' })
+  subscriptionTier: string;
 
-  @Column()
-  status: string;
+  @Column({ type: 'date', nullable: true })
+  subscription_expires_at: Date;
 
-  @CreateDateColumn({ name: 'createdAt', type: 'timestamp' })
+  @CreateDateColumn()
   createdAt: Date;
 
-  // We are ignoring 'subscriptionTier' and 'subscription_expires_at' for now
+  @UpdateDateColumn()
+  updatedAt: Date;
 }

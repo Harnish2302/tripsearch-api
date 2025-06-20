@@ -1,9 +1,10 @@
-// In src/auth/auth.service.ts
-
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { User, UserRole, UserStatus } from '../users/user.entity';
+import { RegisterTravelerDto } from './dto/register-traveler.dto';
+import { RegisterAgentDto } from './dto/register-agent.dto';
 
 @Injectable()
 export class AuthService {
@@ -12,33 +13,70 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  /**
-   * Validates a user's password.
-   * @param email The user's email.
-   * @param pass The user's plaintext password.
-   * @returns The user object without the password hash if valid, otherwise null.
-   */
   async validateUser(email: string, pass: string): Promise<any> {
-    const user = await this.usersService.findOneByEmail(email);
-    if (user && (await bcrypt.compare(pass, user.passwordHash))) {
-      // Important: remove the password hash from the object returned to the caller
-      const { passwordHash, ...result } = user;
+    // FIX: Calling the new public method instead of accessing a private repository
+    const userWithPassword = await this.usersService.findUserWithPassword(email);
+
+    if (userWithPassword && (await bcrypt.compare(pass, userWithPassword.passwordHash))) {
+      const { passwordHash, ...result } = userWithPassword;
       return result;
     }
     return null;
   }
-
-  /**
-   * Creates a JWT access token for a given user.
-   * @param user The user object (must contain id, email, role).
-   * @returns An object containing the signed JWT access token.
-   */
+  
   async login(user: any) {
+    if (user.status !== UserStatus.ACTIVE) {
+      throw new UnauthorizedException('Your account is not active. Please contact support.');
+    }
     const payload = { email: user.email, sub: user.id, role: user.role };
     return {
       access_token: this.jwtService.sign(payload),
     };
   }
 
-  // We will implement the register method in a later step.
+  async registerTraveler(registerDto: RegisterTravelerDto): Promise<User> {
+    if (await this.usersService.findOneByEmail(registerDto.email)) {
+      throw new ConflictException('Email address already registered.');
+    }
+    if (await this.usersService.findOneByPhone(registerDto.phone)) {
+      throw new ConflictException('Phone number already registered.');
+    }
+
+    const passwordHash = await bcrypt.hash(registerDto.password, 10);
+    const newUser: Partial<User> = {
+      ...registerDto,
+      passwordHash,
+      role: UserRole.TRAVELER,
+      status: UserStatus.ACTIVE,
+    };
+    // This now works because UsersService's create method expects Partial<User>
+    return this.usersService.create(newUser);
+  }
+
+  async registerAgent(registerDto: RegisterAgentDto): Promise<User> {
+    if (await this.usersService.findOneByEmail(registerDto.email)) {
+      throw new ConflictException('Email address already registered.');
+    }
+    if (await this.usersService.findOneByPhone(registerDto.phone)) {
+      throw new ConflictException('Phone number already registered.');
+    }
+    
+    const passwordHash = await bcrypt.hash(registerDto.password, 10);
+    const nameParts = registerDto.name.split(' ');
+    const firstName = nameParts[0];
+    const lastName = nameParts.slice(1).join(' ');
+
+    const newUser: Partial<User> = {
+      firstName,
+      lastName,
+      email: registerDto.email,
+      phone: registerDto.phone,
+      company: registerDto.agencyName,
+      passwordHash,
+      role: UserRole.AGENT,
+      status: UserStatus.PENDING,
+    };
+    // This also now works correctly
+    return this.usersService.create(newUser);
+  }
 }

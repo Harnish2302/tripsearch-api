@@ -1,92 +1,127 @@
+// In src/packages/package.entity.ts
+
 import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  ManyToOne,
   OneToMany,
+  JoinColumn,
+  BeforeInsert,
 } from 'typeorm';
+import { User } from '../users/user.entity';
+import { Destination } from '../destinations/destination.entity';
 import { PackageImage } from './package-image.entity';
 
-@Entity({ name: 'packages' })
+// This enum is based on the status from your create_package.php script
+export enum PackageStatus {
+  PENDING_APPROVAL = 'pending_approval',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
+  INACTIVE = 'inactive',
+}
+
+@Entity('packages')
 export class Package {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ name: 'agentId' })
-  agentId: number;
+  // --- Relationships ---
+  @ManyToOne(() => User)
+  @JoinColumn({ name: 'agent_id' })
+  agent: User;
 
+  @ManyToOne(() => Destination)
+  @JoinColumn({ name: 'destination_id' })
+  destination: Destination;
+
+  // This one-to-many relationship now eagerly loads the images.
+  @OneToMany(() => PackageImage, (image) => image.package, {
+    cascade: true, // Automatically save new images when a package is saved
+    eager: true, // Automatically load the images whenever a package is fetched
+  })
+  images: PackageImage[];
+
+  // --- Core Details from your PHP script ---
   @Column()
   title: string;
 
-  // The 'slug' column has been removed to match the database schema.
+  // ADDED: A unique slug for clean URLs, generated automatically from the title.
+  @Column({ unique: true })
+  slug: string;
 
-  @Column({ nullable: true })
-  destination: string;
-
-  @Column({ type: 'text', nullable: true })
+  @Column({ type: 'text' })
   description: string;
 
-  @Column({ name: 'imageUrl', nullable: true })
-  imageUrl: string;
-
-  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0.0 })
+  @Column({ type: 'decimal', precision: 10, scale: 2 })
   price: number;
+  
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  discountPrice: number;
+  
+  @Column({ type: 'int' })
+  duration: number; // in days
 
-  @Column({ type: 'int', nullable: true })
-  duration: number;
-
-  @Column({ name: 'packageType', nullable: true })
+  @Column({ default: 'Standard' })
   packageType: string;
 
-  @Column({ type: 'text', nullable: true })
-  inclusions: string;
-
-  @Column({ type: 'text', nullable: true })
-  exclusions: string;
-
-  @Column({ type: 'longtext', nullable: true })
-  itinerary: string;
-
-  @Column({ name: 'maxParticipants', nullable: true })
-  maxParticipants: number;
-
-  @Column({ name: 'minAge', nullable: true })
-  minAge: number;
-
-  @Column({ name: 'discountPrice', type: 'decimal', precision: 10, scale: 2, nullable: true })
-  discountPrice: number;
-
-  @Column({ name: 'discountPercentage', type: 'decimal', precision: 5, scale: 2, nullable: true })
-  discountPercentage: number;
-  
-  @Column({ default: 'pending_approval' })
-  status: string;
-
-  @Column({ name: 'rejectionReason', type: 'text', nullable: true })
-  rejectionReason: string;
-
-  @Column({ type: 'tinyint', default: 0 })
-  featured: boolean;
-
-  @Column({ nullable: true })
-  tags: string;
-
-  @Column({ name: 'hotelCategory', default: 'Standard' })
+  @Column({ default: 'Standard' })
   hotelCategory: string;
 
-  @Column({ name: 'availability_dates', type: 'longtext', nullable: true })
-  availabilityDates: string;
+  // --- JSON fields for complex data ---
+  @Column({ type: 'json', nullable: true })
+  itinerary: any[]; // e.g., [{ day: 1, title: 'Arrival', description: '...' }]
 
-  @Column({ name: 'view_count', type: 'int', default: 0 })
+  @Column({ type: 'json', nullable: true })
+  inclusions: string[];
+
+  @Column({ type: 'json', nullable: true })
+  exclusions: string[];
+
+  @Column({ type: 'json', nullable: true })
+  tags: string[];
+  
+  // ADDED: This field was in your PHP script for date ranges
+  @Column({ type: 'json', nullable: true })
+  availabilityDates: any[]; // e.g., [{ startDate: 'YYYY-MM-DD', endDate: 'YYYY-MM-DD' }]
+
+  // --- Additional Details ---
+  @Column({ nullable: true })
+  maxParticipants: number;
+
+  @Column({ nullable: true })
+  minAge: number;
+
+  // --- Status & Visibility ---
+  @Column({
+    type: 'enum',
+    enum: PackageStatus,
+    default: PackageStatus.PENDING_APPROVAL,
+  })
+  status: PackageStatus;
+
+  @Column({ default: false })
+  isFeatured: boolean;
+
+  @Column({ type: 'int', default: 0 })
   viewCount: number;
 
-  @CreateDateColumn({ name: 'createdAt' })
+  // --- Timestamps ---
+  @CreateDateColumn()
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updatedAt' })
+  @UpdateDateColumn()
   updatedAt: Date;
 
-  @OneToMany(() => PackageImage, (image) => image.package, { cascade: true, eager: true })
-  images: PackageImage[];
+  // This hook automatically generates the slug before inserting a new package.
+  @BeforeInsert()
+  generateSlug() {
+    this.slug = this.title
+      .toLowerCase()
+      .replace(/&/g, 'and')
+      .replace(/ /g, '-')
+      .replace(/[^\w-]+/g, '');
+  }
 }

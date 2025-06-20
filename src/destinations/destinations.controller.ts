@@ -1,43 +1,83 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+// In src/destinations/destinations.controller.ts
+
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  ParseIntPipe,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { DestinationsService } from './destinations.service';
 import { CreateDestinationDto } from './dto/create-destination.dto';
 import { UpdateDestinationDto } from './dto/update-destination.dto';
-import { AuthGuard } from '@nestjs/passport';
+// FIX 1: Corrected the file path for JwtAuthGuard
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { UserRole } from '../users/user.entity';
 
 @Controller('destinations')
 export class DestinationsController {
   constructor(private readonly destinationsService: DestinationsService) {}
 
-  // --- PROTECTED ROUTE ---
-  @UseGuards(AuthGuard('jwt'))
+  // --- ADMIN ROUTES ---
+
   @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @HttpCode(HttpStatus.CREATED)
   create(@Body() createDestinationDto: CreateDestinationDto) {
     return this.destinationsService.create(createDestinationDto);
   }
 
-  // --- PUBLIC ROUTE ---
-  @Get()
-  findAll() {
-    return this.destinationsService.findAll();
+  // FIX 2: Corrected the typo from 'JwtAuthGaurd' to 'JwtAuthGuard'
+  @Get('admin/all')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  findAllAdmin() {
+    return this.destinationsService.findAllAdmin();
   }
 
-  // --- PUBLIC ROUTE ---
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.destinationsService.findOne(+id);
+  @Get('admin/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  findOneAdmin(@Param('id', ParseIntPipe) id: number) {
+    return this.destinationsService.findOneAdmin(id);
   }
-
-  // --- PROTECTED ROUTE ---
-  @UseGuards(AuthGuard('jwt'))
+  
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateDestinationDto: UpdateDestinationDto) {
-    return this.destinationsService.update(+id, updateDestinationDto);
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateDestinationDto: UpdateDestinationDto,
+  ) {
+    return this.destinationsService.update(id, updateDestinationDto);
   }
 
-  // --- PROTECTED ROUTE ---
-  @UseGuards(AuthGuard('jwt'))
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.destinationsService.remove(+id);
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.destinationsService.remove(id);
+  }
+
+  // --- PUBLIC ROUTES ---
+
+  @Get()
+  findAllPublic() {
+    return this.destinationsService.findAllPublic();
+  }
+
+  @Get(':id')
+  findOnePublic(@Param('id', ParseIntPipe) id: number) {
+    return this.destinationsService.findOnePublic(id);
   }
 }
