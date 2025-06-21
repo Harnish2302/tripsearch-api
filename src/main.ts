@@ -8,10 +8,11 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.useGlobalPipes(new ValidationPipe());
 
-  // FIX: Configure CORS to explicitly allow your frontend's origin
+  // FIX: Make CORS configuration more flexible for serverless environments
+  // to correctly handle preflight (OPTIONS) requests.
   app.enableCors({
-    origin: 'https://tripsearch.in', // The domain of your frontend
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    origin: true, // Allows requests from any origin
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
 
