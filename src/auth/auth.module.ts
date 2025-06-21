@@ -1,3 +1,5 @@
+// src/auth/auth.module.ts
+
 import { Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { UsersModule } from '../users/users.module';
@@ -7,12 +9,14 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
+import { TypeOrmModule } from '@nestjs/typeorm'; // <-- ADDED THIS
+import { PasswordReset } from './password-reset.entity'; // <-- ADDED THIS
 
 @Module({
   imports: [
     UsersModule,
     PassportModule,
-    ConfigModule, // Ensures ConfigService is available
+    ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -21,16 +25,9 @@ import { JwtStrategy } from './jwt.strategy';
         signOptions: { expiresIn: '1h' },
       }),
     }),
+    TypeOrmModule.forFeature([PasswordReset]), // <-- ADDED THIS
   ],
   controllers: [AuthController],
-  // This 'providers' array is the key to the fix.
-  // It makes all these services available for injection within this module.
-  providers: [
-    AuthService,
-    LocalStrategy,
-    JwtStrategy,
-    // By adding ConfigService here, we ensure JwtStrategy can use it.
-    ConfigService, 
-  ],
+  providers: [AuthService, LocalStrategy, JwtStrategy, ConfigService],
 })
 export class AuthModule {}

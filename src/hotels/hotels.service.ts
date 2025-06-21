@@ -1,4 +1,4 @@
-// In src/hotels/hotels.service.ts
+// src/hotels/hotels.service.ts
 
 import {
   Injectable,
@@ -13,6 +13,8 @@ import { UpdateHotelDto } from './dto/update-hotel.dto';
 import { User, UserRole } from '../users/user.entity';
 import { Destination } from '../destinations/destination.entity';
 import { HotelImage } from './hotel-image.entity';
+import { HotelRoomType } from './hotel-room-type.entity'; // <-- ADDED THIS
+import { CreateHotelRoomTypeDto } from './dto/create-hotel-room-type.dto'; // <-- ADDED THIS
 
 @Injectable()
 export class HotelsService {
@@ -21,6 +23,9 @@ export class HotelsService {
     private hotelsRepository: Repository<Hotel>,
     @InjectRepository(Destination)
     private destinationsRepository: Repository<Destination>,
+    // v-- INJECTED THE NEW REPOSITORY --v
+    @InjectRepository(HotelRoomType)
+    private roomTypeRepository: Repository<HotelRoomType>,
   ) {}
 
   // --- Agent-specific action ---
@@ -93,6 +98,30 @@ export class HotelsService {
     Object.assign(hotel, updateHotelDto);
     hotel.status = HotelStatus.PENDING_APPROVAL;
     return this.hotelsRepository.save(hotel);
+  }
+  
+  // v-- ADDED THIS NEW METHOD --v
+  async addRoomType(
+    hotelId: number,
+    createRoomTypeDto: CreateHotelRoomTypeDto,
+    agent: User,
+  ): Promise<HotelRoomType> {
+    const hotel = await this.hotelsRepository.findOne({
+      where: { id: hotelId, agent: { id: agent.id } },
+    });
+
+    if (!hotel) {
+      throw new NotFoundException(
+        `Hotel with ID #${hotelId} not found or you do not have permission to modify it.`,
+      );
+    }
+
+    const newRoomType = this.roomTypeRepository.create({
+      ...createRoomTypeDto,
+      hotel: hotel,
+    });
+
+    return this.roomTypeRepository.save(newRoomType);
   }
   
   // --- Admin-specific actions ---

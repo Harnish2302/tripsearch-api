@@ -1,18 +1,23 @@
-import 'dotenv/config'; // Make sure .env variables are loaded
+// src/data-source.ts
+
+import 'dotenv/config';
 import { DataSource } from 'typeorm';
-// ... all your entity imports
 import { User } from './users/user.entity';
 import { Destination } from './destinations/destination.entity';
 import { Package } from './packages/package.entity';
 import { PackageImage } from './packages/package-image.entity';
 import { Hotel } from './hotels/hotel.entity';
 import { HotelImage } from './hotels/hotel-image.entity';
+import { HotelRoomType } from './hotels/hotel-room-type.entity';
 import { QuoteRequest } from './quotes/quote-request.entity';
 import { QuoteResponse } from './quotes/quote-response.entity';
 import { Conversation } from './quotes/conversation.entity';
 import { Message } from './quotes/message.entity';
 import { Payment } from './payments/payment.entity';
 import { Subscription } from './payments/subscription.entity';
+import { AdBooking } from './ad-bookings/ad-booking.entity';
+import { PasswordReset } from './auth/password-reset.entity';
+import { SearchLog } from './search-logs/search-log.entity';
 
 export default new DataSource({
   type: 'mysql',
@@ -28,15 +33,17 @@ export default new DataSource({
     PackageImage,
     Hotel,
     HotelImage,
+    HotelRoomType,
     QuoteRequest,
     QuoteResponse,
     Conversation,
     Message,
     Payment,
     Subscription,
+    AdBooking,
+    PasswordReset,
+    SearchLog,
   ],
-  // This is the key change. It tells TypeORM to automatically update the
-  // database schema to match the entities, without using migrations.
   synchronize: true,
-  migrations: [], // We are no longer using migrations
+  migrations: [],
 });

@@ -1,9 +1,13 @@
+// src/auth/auth.controller.ts
+
 import { Controller, Request, Post, UseGuards, Body, Get, HttpCode, HttpStatus } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { RegisterTravelerDto } from './dto/register-traveler.dto';
 import { RegisterAgentDto } from './dto/register-agent.dto';
-import { LoginDto } from './dto/login.dto'; // This import might be needed if not present
+import { LoginDto } from './dto/login.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto'; // <-- ADDED THIS
+import { ResetPasswordDto } from './dto/reset-password.dto'; // <-- ADDED THIS
 
 @Controller('auth')
 export class AuthController {
@@ -27,14 +31,24 @@ export class AuthController {
   registerAgent(@Body() registerDto: RegisterAgentDto) {
     return this.authService.registerAgent(registerDto);
   }
+  
+  // v-- ADDED forgot-password ENDPOINT --v
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(forgotPasswordDto.email);
+  }
 
-  // 1. ADD THE GUARD to protect this endpoint
+  // v-- ADDED reset-password ENDPOINT --v
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
+    return this.authService.resetPassword(resetPasswordDto);
+  }
+
   @UseGuards(AuthGuard('jwt'))
   @Get('profile')
   getProfile(@Request() req) {
-    // 2. UPDATE THE RETURN VALUE
-    // This decorator uses the JwtStrategy to verify the token.
-    // If the token is valid, `req.user` is populated by the strategy.
     return req.user;
   }
 }

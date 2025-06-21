@@ -1,4 +1,4 @@
-// In src/hotels/hotel.entity.ts
+// src/hotels/hotel.entity.ts
 
 import {
   Entity,
@@ -13,6 +13,7 @@ import {
 import { User } from '../users/user.entity';
 import { Destination } from '../destinations/destination.entity';
 import { HotelImage } from './hotel-image.entity';
+import { HotelRoomType } from './hotel-room-type.entity'; // <-- ADDED THIS
 
 export enum HotelStatus {
   PENDING_APPROVAL = 'pending_approval',
@@ -39,6 +40,13 @@ export class Hotel {
     eager: true,
   })
   images: HotelImage[];
+
+  // v-- ADDED THIS RELATIONSHIP --v
+  @OneToMany(() => HotelRoomType, (roomType) => roomType.hotel, {
+    cascade: true,
+    eager: true, // Load room types automatically when fetching a hotel
+  })
+  roomTypes: HotelRoomType[];
 
   @Column()
   name: string;

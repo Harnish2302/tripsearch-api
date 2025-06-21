@@ -1,4 +1,4 @@
-// In src/hotels/hotels.controller.ts
+// src/hotels/hotels.controller.ts
 
 import {
   Controller,
@@ -22,6 +22,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { User, UserRole } from '../users/user.entity';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { UpdateHotelStatusDto } from './dto/update-hotel-status.dto';
+import { CreateHotelRoomTypeDto } from './dto/create-hotel-room-type.dto'; // <-- ADDED THIS
 
 @Controller('hotels')
 export class HotelsController {
@@ -46,6 +47,18 @@ export class HotelsController {
   @Roles(UserRole.AGENT)
   create(@Body() createHotelDto: CreateHotelDto, @GetUser() agent: User) {
     return this.hotelsService.create(createHotelDto, agent);
+  }
+  
+  // v-- ADDED THIS NEW ENDPOINT --v
+  @Post(':hotelId/room-types')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.AGENT)
+  addRoomType(
+    @Param('hotelId', ParseIntPipe) hotelId: number,
+    @Body() createRoomTypeDto: CreateHotelRoomTypeDto,
+    @GetUser() agent: User,
+  ) {
+    return this.hotelsService.addRoomType(hotelId, createRoomTypeDto, agent);
   }
 
   @Get('agent/my-hotels')
