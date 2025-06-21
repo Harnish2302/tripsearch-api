@@ -13,7 +13,7 @@ import {
 import { User } from '../users/user.entity';
 import { Destination } from '../destinations/destination.entity';
 import { HotelImage } from './hotel-image.entity';
-import { HotelRoomType } from './hotel-room-type.entity'; // <-- ADDED THIS
+import { HotelRoomType } from './hotel-room-type.entity';
 
 export enum HotelStatus {
   PENDING_APPROVAL = 'pending_approval',
@@ -40,11 +40,10 @@ export class Hotel {
     eager: true,
   })
   images: HotelImage[];
-
-  // v-- ADDED THIS RELATIONSHIP --v
+  
   @OneToMany(() => HotelRoomType, (roomType) => roomType.hotel, {
     cascade: true,
-    eager: true, // Load room types automatically when fetching a hotel
+    eager: true,
   })
   roomTypes: HotelRoomType[];
 
@@ -99,6 +98,9 @@ export class Hotel {
     default: HotelStatus.PENDING_APPROVAL,
   })
   status: HotelStatus;
+
+  @Column({ default: false })
+  isFeatured: boolean;
 
   @CreateDateColumn()
   createdAt: Date;

@@ -13,8 +13,8 @@ import { UpdateHotelDto } from './dto/update-hotel.dto';
 import { User, UserRole } from '../users/user.entity';
 import { Destination } from '../destinations/destination.entity';
 import { HotelImage } from './hotel-image.entity';
-import { HotelRoomType } from './hotel-room-type.entity'; // <-- ADDED THIS
-import { CreateHotelRoomTypeDto } from './dto/create-hotel-room-type.dto'; // <-- ADDED THIS
+import { HotelRoomType } from './hotel-room-type.entity';
+import { CreateHotelRoomTypeDto } from './dto/create-hotel-room-type.dto';
 
 @Injectable()
 export class HotelsService {
@@ -23,12 +23,10 @@ export class HotelsService {
     private hotelsRepository: Repository<Hotel>,
     @InjectRepository(Destination)
     private destinationsRepository: Repository<Destination>,
-    // v-- INJECTED THE NEW REPOSITORY --v
     @InjectRepository(HotelRoomType)
     private roomTypeRepository: Repository<HotelRoomType>,
   ) {}
 
-  // --- Agent-specific action ---
   async create(createHotelDto: CreateHotelDto, agent: User): Promise<Hotel> {
     const destination = await this.destinationsRepository.findOneBy({
       id: createHotelDto.destinationId,
@@ -38,28 +36,35 @@ export class HotelsService {
         `Destination with ID #${createHotelDto.destinationId} not found.`,
       );
     }
-
     const newHotel = new Hotel();
-    Object.assign(newHotel, createHotelDto); // Map DTO properties to the entity
-    
+    Object.assign(newHotel, createHotelDto);
     newHotel.agent = agent;
     newHotel.destination = destination;
-    newHotel.status = HotelStatus.PENDING_APPROVAL; // New hotels are always pending
+    newHotel.status = HotelStatus.PENDING_APPROVAL;
     newHotel.images = createHotelDto.images.map(imgDto => {
         const img = new HotelImage();
         img.imageUrl = imgDto.imageUrl;
         img.altText = imgDto.altText ?? '';
         return img;
     });
-
     return this.hotelsRepository.save(newHotel);
   }
 
-  // --- Public actions ---
   async findAllPublic(): Promise<Hotel[]> {
     return this.hotelsRepository.find({
       where: { status: HotelStatus.APPROVED },
       relations: ['destination'],
+    });
+  }
+
+  async findFeatured(): Promise<Hotel[]> {
+    return this.hotelsRepository.find({
+      where: {
+        status: HotelStatus.APPROVED,
+        isFeatured: true,
+      },
+      relations: ['destination'],
+      take: 3,
     });
   }
 
@@ -74,7 +79,6 @@ export class HotelsService {
     return hotel;
   }
 
-  // --- Agent-specific actions ---
   async findAllForAgent(agentId: number): Promise<Hotel[]> {
     return this.hotelsRepository.find({
       where: { agent: { id: agentId } },
@@ -82,49 +86,32 @@ export class HotelsService {
     });
   }
 
-  async update(
-    hotelId: number,
-    agentId: number,
-    updateHotelDto: UpdateHotelDto,
-  ): Promise<Hotel> {
+  async update(hotelId: number, agentId: number, updateHotelDto: UpdateHotelDto): Promise<Hotel> {
     const hotel = await this.hotelsRepository.findOne({
       where: { id: hotelId, agent: { id: agentId } },
     });
-
     if (!hotel) {
       throw new NotFoundException(`Hotel with ID #${hotelId} not found or you do not have permission to edit it.`);
     }
-
     Object.assign(hotel, updateHotelDto);
     hotel.status = HotelStatus.PENDING_APPROVAL;
     return this.hotelsRepository.save(hotel);
   }
   
-  // v-- ADDED THIS NEW METHOD --v
-  async addRoomType(
-    hotelId: number,
-    createRoomTypeDto: CreateHotelRoomTypeDto,
-    agent: User,
-  ): Promise<HotelRoomType> {
+  async addRoomType(hotelId: number, createRoomTypeDto: CreateHotelRoomTypeDto, agent: User): Promise<HotelRoomType> {
     const hotel = await this.hotelsRepository.findOne({
       where: { id: hotelId, agent: { id: agent.id } },
     });
-
     if (!hotel) {
-      throw new NotFoundException(
-        `Hotel with ID #${hotelId} not found or you do not have permission to modify it.`,
-      );
+      throw new NotFoundException(`Hotel with ID #${hotelId} not found or you do not have permission to modify it.`);
     }
-
     const newRoomType = this.roomTypeRepository.create({
       ...createRoomTypeDto,
       hotel: hotel,
     });
-
     return this.roomTypeRepository.save(newRoomType);
   }
   
-  // --- Admin-specific actions ---
   async findAllAdmin(): Promise<Hotel[]> {
     return this.hotelsRepository.find({ relations: ['agent', 'destination']});
   }
@@ -138,7 +125,6 @@ export class HotelsService {
       return this.hotelsRepository.save(hotel);
   }
 
-  // --- Universal remove action with security ---
   async remove(hotelId: number, user: User): Promise<void> {
     let hotel: Hotel | null = null;
     if (user.role === UserRole.ADMIN) {
@@ -146,11 +132,9 @@ export class HotelsService {
     } else if (user.role === UserRole.AGENT) {
         hotel = await this.hotelsRepository.findOne({ where: { id: hotelId, agent: { id: user.id } } });
     }
-
     if (!hotel) {
       throw new ForbiddenException(`Hotel with ID #${hotelId} not found or you do not have permission to delete it.`);
     }
-    
     await this.hotelsRepository.remove(hotel);
   }
 }

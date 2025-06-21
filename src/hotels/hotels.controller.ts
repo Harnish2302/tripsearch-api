@@ -22,13 +22,16 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { User, UserRole } from '../users/user.entity';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { UpdateHotelStatusDto } from './dto/update-hotel-status.dto';
-import { CreateHotelRoomTypeDto } from './dto/create-hotel-room-type.dto'; // <-- ADDED THIS
+import { CreateHotelRoomTypeDto } from './dto/create-hotel-room-type.dto';
 
 @Controller('hotels')
 export class HotelsController {
   constructor(private readonly hotelsService: HotelsService) {}
 
-  // --- PUBLIC ROUTES ---
+  @Get('public/featured')
+  findFeatured() {
+    return this.hotelsService.findFeatured();
+  }
 
   @Get()
   findAllPublic() {
@@ -40,8 +43,6 @@ export class HotelsController {
     return this.hotelsService.findOnePublic(id);
   }
 
-  // --- AGENT-ONLY ROUTES ---
-
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.AGENT)
@@ -49,7 +50,6 @@ export class HotelsController {
     return this.hotelsService.create(createHotelDto, agent);
   }
   
-  // v-- ADDED THIS NEW ENDPOINT --v
   @Post(':hotelId/room-types')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.AGENT)
@@ -79,8 +79,6 @@ export class HotelsController {
     return this.hotelsService.update(id, agent.id, updateHotelDto);
   }
 
-  // --- ADMIN-ONLY ROUTES ---
-
   @Get('admin/all')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
@@ -98,10 +96,8 @@ export class HotelsController {
     return this.hotelsService.updateStatus(id, updateHotelStatusDto.status);
   }
   
-  // --- SECURED DELETE (AGENT or ADMIN) ---
-
   @Delete(':id')
-  @UseGuards(JwtAuthGuard) // Service handles role logic
+  @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id', ParseIntPipe) id: number, @GetUser() user: User) {
     return this.hotelsService.remove(id, user);
