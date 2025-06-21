@@ -1,5 +1,5 @@
 // In src/payments/payments.service.ts
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Razorpay from 'razorpay';
 import * as crypto from 'crypto';
@@ -53,6 +53,10 @@ export class PaymentsService {
   ): Promise<boolean> {
     const body = `${razorpayOrderId}|${razorpayPaymentId}`;
     const keySecret = this.configService.get<string>('RAZORPAY_KEY_SECRET');
+
+    if (!keySecret) {
+      throw new InternalServerErrorException('Razorpay key secret is not configured.');
+    }
     
     const expectedSignature = crypto
       .createHmac('sha256', keySecret)
@@ -72,12 +76,12 @@ export class PaymentsService {
       );
     } else {
         await this.paymentRepository.update(
-            { razorpayOrderId },
-            {
-              razorpayPaymentId,
-              status: PaymentStatus.FAILED,
-            },
-          );
+          { razorpayOrderId },
+          {
+            razorpayPaymentId,
+            status: PaymentStatus.FAILED,
+          },
+        );
     }
     
     return isSignatureValid;
@@ -97,6 +101,11 @@ export class PaymentsService {
 
   verifyWebhookSignature(body: any, signature: string): boolean {
     const keySecret = this.configService.get<string>('RAZORPAY_WEBHOOK_SECRET');
+
+    if (!keySecret) {
+      throw new InternalServerErrorException('Razorpay webhook secret is not configured.');
+    }
+
     const expectedSignature = crypto
       .createHmac('sha256', keySecret)
       .update(JSON.stringify(body))

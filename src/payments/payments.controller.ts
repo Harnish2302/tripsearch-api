@@ -1,5 +1,5 @@
 // In src/payments/payments.controller.ts
-import { Controller, Post, Body, UseGuards, RawBodyRequest, Req } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, RawBodyRequest, Req, BadRequestException } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -34,6 +34,11 @@ export class PaymentsController {
   @Post('webhook')
   async handleWebhook(@Req() req: RawBodyRequest<Request>) {
     const signature = req.headers['x-razorpay-signature'];
+
+    if (typeof signature !== 'string') {
+      throw new BadRequestException('Razorpay signature header is missing or invalid.');
+    }
+
     const isVerified = this.paymentsService.verifyWebhookSignature(req.rawBody, signature);
 
     if (isVerified) {
